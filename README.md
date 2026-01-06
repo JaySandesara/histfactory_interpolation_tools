@@ -6,7 +6,7 @@ Repository to explore and develop the Ambient Fisher and Gaussian Process Regres
 
 Ambient Fisher algorithm heavily derived from work by Kyle Cranmer and Jeff Streets: [git link](https://github.com/cranmer/ambient-fisher/tree/483c23597ceef4111791f3e1cd0ca6566f7fdc15). The sphere embedding algorithm has been modified using the technique from [this work](https://github.com/anjishnu1991/interpolation/tree/master).
 
-New work in this repository includes a modification that allows Gnomonic interpolation directly in the intrinsic Hilbert space without the Euclidean embedding step, as well as a new interpolation scheme using closed-form geodesics on the manifold of Poisson probability densities when working with binned Poisson fits.
+New work in this repository includes a modification that allows Gnomonic interpolation directly in the intrinsic Hilbert space without the Euclidean embedding step, as well as a new interpolation scheme using closed-form geodesics on the manifold of Poisson probability densities.
 
 ### Intrinsic Gnomonic Interpolation
 
@@ -28,7 +28,7 @@ All the rest of the steps are more or less identical to the original algorithm.
 
 ### Ambient Fisher Interpolation in space of Poisson probabilities
 
-The closed-form expression associated with two Poisson distributions computed with expected yields $\nu_1$ and $\nu_2$, which is given by
+The closed-form expression for the Fisher-Rao geodesic associated with two Poisson distributions computed with expected yields $\nu_1$ and $\nu_2$ is given by
 
 $$d_\text{FR}(p(x\mid \nu_1), p(x\mid \nu_1)) = 2 \cdot  \Big| \sqrt{\nu_1} - \sqrt{\nu_2} \Big|$$
 
