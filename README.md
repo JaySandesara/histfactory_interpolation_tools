@@ -36,8 +36,4 @@ The key observation is that the FR metric for a Poisson family becomes Euclidean
 
 ## Gaussian Process Regression
 
-# Library
-
-Eventual goal to build a library around Ambient Fisher and GP regression for regression using arbitrary (alpha, p(x|alpha)) pairs - regardless of whether they come from binned approximations or NN estimated PDFs.
-
 
