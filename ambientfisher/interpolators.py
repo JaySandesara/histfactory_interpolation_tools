@@ -14,7 +14,8 @@ class AmbientFisherInterpolator:
     def __init__(self,
                  anchor_alphas: np.array, 
                  anchor_pdfs: np.array, 
-                 x_grid: np.ndarray):
+                 x_grid: np.ndarray,
+                 plot_simplex = False):
         '''
         This class of AF is derived from work by Cranmer, Streets and Bandyopadhyay
         '''
@@ -29,6 +30,16 @@ class AmbientFisherInterpolator:
         self.triangulation = Delaunay(self.anchor_alphas)
         self.simplices = self.triangulation.simplices
         self.neighbors = self.triangulation.neighbors
+
+        if plot_simplex:
+            if self.sphere_dim>2: 
+                print(f"Cannot plot simplex in high-dimensional space")
+            else:
+                plt.triplot(anchor_alphas[:,0], anchor_alphas[:,1], self.simplices)
+                plt.plot(anchor_alphas[:,0], anchor_alphas[:,1], 'o')
+                plt.xlabel(r"$\alpha_1$")
+                plt.ylabel(r"$\alpha_2$")
+                plt.show()
 
         self.q = []
         for p in self.anchor_pdfs:
