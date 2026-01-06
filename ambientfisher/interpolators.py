@@ -107,7 +107,6 @@ class AmbientFisherInterpolator:
 
         # choose base vertex for stability, then reorder (base first)
         base_vertex = choose_base_vertex(inner_product_matrix)
-        base_vertex = 0
 
         simplex_qs_reordered = np.concatenate((simplex_qs[base_vertex:base_vertex+1], 
                                                 simplex_qs[:base_vertex], 
@@ -137,14 +136,15 @@ class AmbientFisherInterpolator:
         baryCoords_ = self.triangulation.transform[simplex_indices, :self.sphere_dim].dot(np.transpose(alpha - self.triangulation.transform[simplex_indices, self.sphere_dim]))
         baryCoords = np.concatenate([baryCoords_, [1.0 - baryCoords_.sum()]])
 
+        gnomonicTarget = np.zeros(self.sphere_dim)
         for i in range(self.ambient_dim):
-            gnomonicTarget      = baryCoords[i] * gnomonic_projection_vertices[i]
+            gnomonicTarget      += baryCoords[i] * gnomonic_projection_vertices[i]
 
         normedVertices          = gnomonic_projection_vertices.copy()
         for i in range(1, normedVertices.shape[0]):
             normedVertices[i] /= np.linalg.norm(normedVertices[i])
         normedSimplex           = Delaunay(normedVertices)
-        normedBaryCoords_       = normedSimplex.transform[simplex_indices, :self.sphere_dim].dot(np.transpose(gnomonicTarget - normedSimplex.transform[simplex_indices, self.sphere_dim]))
+        normedBaryCoords_       = normedSimplex.transform[0, :self.sphere_dim].dot(np.transpose(gnomonicTarget - normedSimplex.transform[0, self.sphere_dim]))
         normedBaryCoords        = np.concatenate([normedBaryCoords_, [1.0 - normedBaryCoords_.sum()]])
         t                       = np.arctan(np.linalg.norm(gnomonicTarget))
 
@@ -166,7 +166,7 @@ class AmbientFisherInterpolator:
         tangent_dir_target = l2_normalize(tangent_dir_target, self.x)
 
         # Step 5: exp map on Hilbert sphere
-        q_hat       = l2_normalize(np.cos(t) * simplex_qs_reordered[0] + np.sin(t) * tangent_dir_target, self.x)
-        p_hat       = q_hat ** 2
+        q_alpha         = l2_normalize(np.cos(t) * simplex_qs_reordered[0] + np.sin(t) * tangent_dir_target, self.x)
+        pdf_alpha       = q_alpha ** 2
 
-        return p_hat
+        return pdf_alpha
