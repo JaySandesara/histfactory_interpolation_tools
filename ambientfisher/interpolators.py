@@ -105,8 +105,6 @@ class AmbientFisherInterpolator:
             inner_product_matrix.append(inner_product_arr)
         inner_product_matrix=np.array(inner_product_matrix)
 
-        print(np.diag(inner_product_matrix))
-
         # choose base vertex for stability, then reorder (base first)
         base_vertex = choose_base_vertex(inner_product_matrix)
         base_vertex = 0
