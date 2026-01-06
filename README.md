@@ -10,7 +10,7 @@ New work in this repository includes a modification that allows Gnomonic interpo
 
 ### Intrinsic Gnomonic Interpolation
 
-The original Ambient Fisher algorithm involves a step that embeds the anchor points to a low-dimensional Euclidean sphere, preserving chord distances from the original Hilber-space representation. This is followed by Delaunay triangulation and then Gnomonic projection onto the tangent plane at one of the vertices of the simplex containing the target parameter value.
+The original Ambient Fisher algorithm involves a step that embeds the indices of the simplex containing the target parameter value to a low-dimensional Euclidean sphere, preserving chord distances from the original Hilber-space representation. This is followed by Gnomonic projection onto the tangent plane at one of the vertices of the simplex containing the target parameter value.
 
 In this work, we compare this original algorithm with a modified one, where the Gnomonic projection is performed onto the appropriate tangent plane, directly in the infinite-dimensional Hilbert space representation instead of the low-dimensional Euclidean space. This approach can be significantly faster as well as more robust since the Euclidean embedding step can become potentially unstable when large-dimensional parameter spaces are involved.
 
@@ -22,17 +22,17 @@ Key formulae that make this possible:
 
 2. Inverse Gnomonic Projection:
 
-$$\phi = \frac{\sqrt{p(\alpha)}}{\langle \sqrt{p(\alpha)}, \sqrt{p(\alpha_0)} \rangle}$$
+$$\sqrt{p(\alpha)} = \frac{\sqrt{p(\alpha_0)} + g(\sqrt{p(\alpha)})}{\mid\mid \sqrt{p(\alpha_0)} + g(\sqrt{p(\alpha)}) \mid\mid}$$
 
 All the rest of the steps are more or less identical to the original algorithm.
 
 ### Ambient Fisher Interpolation in space of Poisson probabilities
 
-The closed-form expression for the Fisher-Rao geodesic associated with two Poisson distributions computed with expected yields $\nu_1$ and $\nu_2$ is given by [Ref](https://arxiv.org/pdf/2304.14885)
+The closed-form expression for the Fisher-Rao geodesic associated with two Poisson distributions computed with expected yields $\nu_1$ and $\nu_2$ is given by [[ref]](https://arxiv.org/pdf/2304.14885):
 
 $$d_\text{FR}(p(x\mid \nu_1), p(x\mid \nu_1)) = 2 \cdot  \Big| \sqrt{\nu_1} - \sqrt{\nu_2} \Big|$$
 
-The key observation is that the FR metric for a Poisson family becomes Euclidean in the $\sqrt{\nu}$ space (ignoring the factor of two, which is just a constant scaling of the geometry. This means the gnomonic projection step is unnecessary and we can already start Delauney triangualation after the square-root transformation of the yield.
+The key observation is that the FR metric for a Poisson family becomes Euclidean in the $\sqrt{\nu}$ space (ignoring the factor of two, which is just a constant scaling of the geometry. This means the gnomonic projection step is unnecessary and instead we interpolate along Poisson FR geodesics, which are linear in $\sqrt{\nu}$.
 
 ## Gaussian Process Regression
 
