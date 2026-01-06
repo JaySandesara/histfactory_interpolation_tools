@@ -28,7 +28,7 @@ All the rest of the steps are more or less identical to the original algorithm.
 
 ### Ambient Fisher Interpolation in space of Poisson probabilities
 
-The closed-form expression for the Fisher-Rao geodesic associated with two Poisson distributions computed with expected yields $\nu_1$ and $\nu_2$ is given by
+The closed-form expression for the Fisher-Rao geodesic associated with two Poisson distributions computed with expected yields $\nu_1$ and $\nu_2$ is given by [Ref](https://arxiv.org/pdf/2304.14885)
 
 $$d_\text{FR}(p(x\mid \nu_1), p(x\mid \nu_1)) = 2 \cdot  \Big| \sqrt{\nu_1} - \sqrt{\nu_2} \Big|$$
 
