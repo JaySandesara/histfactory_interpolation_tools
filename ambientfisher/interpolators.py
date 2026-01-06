@@ -10,6 +10,68 @@ from ambientfisher.utils import barycentric_weights_simplex, \
     intrinsic_gnomonic_from_triangle, getChordDistance, \
     embed_points_on_unit_sphere_from_chord_distances
 
+class PoissonAFInterpolator:
+    def __init__(self,
+                 anchor_alphas: np.ndarray, 
+                 anchor_nus: np.ndarray,
+                 plot_simplex=False):
+        '''
+        Bin-by-bin interpolator in the manifold of Poisson probabilities
+        '''
+        self.anchor_alphas = anchor_alphas
+        self.anchor_nus = list(anchor_nus)
+
+        self.ambient_dim = len(anchor_alphas[0]) + 1
+        self.sphere_dim = self.ambient_dim - 1
+
+        # Delauney triangulation
+        self.triangulation = Delaunay(self.anchor_alphas)
+        self.simplices = self.triangulation.simplices
+        self.neighbors = self.triangulation.neighbors
+
+        if plot_simplex:
+            if self.sphere_dim>2: 
+                print(f"Cannot plot simplex in high-dimensional space")
+            else:
+                plt.triplot(anchor_alphas[:,0], anchor_alphas[:,1], self.simplices)
+                plt.plot(anchor_alphas[:,0], anchor_alphas[:,1], 'o')
+                plt.xlabel(r"$\alpha_1$")
+                plt.ylabel(r"$\alpha_2$")
+                plt.show()
+
+        self.sqrtnus = []
+        for nu in self.anchor_nus:
+            sqrtnu = np.sqrt(nu)
+            self.sqrtnus.append(sqrtnu)
+
+        self.sqrtnus = np.array(self.sqrtnus)
+
+    def enclosing_simplex_indices(self, 
+                                alpha: np.array):
+        simplex_indices = int(self.triangulation.find_simplex(alpha))
+        if simplex_indices==-1:
+            raise Exception("Needs extrapolation")
+        return simplex_indices
+
+    def predict(self, alpha: np.ndarray) -> float:
+        '''
+        Predict interpolated nu at alpha
+        '''
+        simplex_indices = self.enclosing_simplex_indices(alpha)
+
+        verts_init = self.simplices[simplex_indices]
+        anchors = self.anchor_alphas[verts_init]
+
+        barycentric_weights = barycentric_weights_simplex(alpha, anchors)
+
+        sqrtnu_anchors = self.sqrtnus[verts_init]
+
+        sqrtnu_interpolated = np.dot(barycentric_weights, sqrtnu_anchors)
+
+        nu_interpolated = sqrtnu_interpolated ** 2
+
+        return nu_interpolated
+
 class AmbientFisherInterpolator:
     def __init__(self,
                  anchor_alphas: np.array, 
