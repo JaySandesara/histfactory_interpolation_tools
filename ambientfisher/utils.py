@@ -106,17 +106,17 @@ def embed_points_on_unit_sphere_from_chord_distances(chord_dist: np.array):
 
 def intrinsic_gnomonic_from_triangle(q_array, xarray, barycentric_weights):
     '''
-    Given unit-norm sqrt densities q1, q2, q3 and barycentric weights for the corresponding alpha, 
-    with q1 mapped to 0 in its own tangent place, the function returns interpolated pdf at alpha.
+    Given unit-norm sqrt densities q_i and barycentric weights for the target alpha, 
+    with q0 mapped to 0 in its own tangent place, the function returns interpolated pdf at alpha.
 
     This is the direct Hilber-space modification to the original AF.
 
     Gnomonic projection formula in the intrinsic space: 
-    g_i = (q_i - <q1, q_i> q1) / <q1, q_i>
+    g_i = q_i / <q0, q_i> - q0
 
     And the interpolation is done using the standard AF formula:
     g = w2*g2 + w3*g3
-    q(alpha) = normalize(q1 + g)
+    q(alpha) = normalize(q0 + g)
     p(alpha) = q(alpha)**2
     '''
 
@@ -127,9 +127,9 @@ def intrinsic_gnomonic_from_triangle(q_array, xarray, barycentric_weights):
 
         c_i0 = inner_product(q_array[0], q_array[i], xarray)
         if callable(q_array[0]):
-            gnomonic_projections.append((q_array[i](xarray) - c_i0 * q_array[0](xarray)) / c_i0)
+            gnomonic_projections.append((q_array[i](xarray) / c_i0) - q_array[0](xarray))
         else:
-            gnomonic_projections.append((q_array[i] - c_i0 * q_array[0]) / c_i0)
+            gnomonic_projections.append((q_array[i] / c_i0 ) - q_array[0])
 
     gnomonic_projections =  np.array(gnomonic_projections)
 
