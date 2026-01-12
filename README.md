@@ -12,19 +12,21 @@ New work in this repository includes a modification that allows Gnomonic interpo
 
 The original Ambient Fisher algorithm involves a step that embeds the indices of the simplex containing the target parameter value to a low-dimensional Euclidean sphere, preserving chord distances from the original Hilber-space representation. This is followed by Gnomonic projection onto the tangent plane at one of the vertices of the simplex containing the target parameter value.
 
-In this work, we compare this original algorithm with a modified one, where the Gnomonic projection is performed onto the appropriate tangent plane, directly in the infinite-dimensional Hilbert space representation instead of the low-dimensional Euclidean space. This approach can be significantly faster as well as more robust since the Euclidean embedding step can become potentially unstable when large-dimensional parameter spaces are involved.
+In this work, we compare this original algorithm with a modified one, where the Gnomonic projection is performed onto the appropriate tangent plane, directly in the Hilbert space representation instead of the low-dimensional Euclidean space. This approach can be significantly faster as well as more robust since the Euclidean embedding step can become potentially unstable when large-dimensional parameter spaces are involved.
 
 Key formulae that make this possible:
 
 1. Gnomonic projection generalized to Hilbert-space representation:
    
-  $$g\left(\sqrt{p(\alpha)}\right) = \frac{\sqrt{p(\alpha)} - \langle \sqrt{p(\alpha_0)}, \sqrt{p(\alpha)} \rangle \sqrt{p(\alpha_0)}}{\langle \sqrt{p(\alpha_0)}, \sqrt{p(\alpha)} \rangle}$$
+  $$g\left(\sqrt{p(\alpha)}\right) = \frac{\sqrt{p(\alpha)}}{\langle \sqrt{p(\alpha_0)}, \sqrt{p(\alpha)}\rangle} - \sqrt{p(\alpha_0)}$$
+
+  where we subtract $\sqrt{p(\alpha_0)}$ so the base point maps to zero and we move to a representation with vectors on the tangent space. This is equivalent to the Gnomonic projection formula in original Ambient Fisher when the Euclidean embedded $\sqrt{p(\alpha_0)}$ is chosen to be at the south pole of the embedding sphere, giving $\langle \sqrt{p(\alpha_0)}, \sqrt{p(\alpha)}\rangle$ equal to the last  (-z in 3D Euclidean embedding for example).
 
 2. Inverse Gnomonic Projection:
 
 $$\sqrt{p(\alpha)} = \frac{\sqrt{p(\alpha_0)} + g(\sqrt{p(\alpha)})}{\mid\mid \sqrt{p(\alpha_0)} + g(\sqrt{p(\alpha)}) \mid\mid}$$
 
-All the rest of the steps are more or less identical to the original algorithm.
+where $\sqrt{p(\alpha_0)}$ addition maps the point back onto the tangent plane at $\sqrt{p(\alpha_0)}$ and then the inverse is computed using the norm - exactly equivalent to the exponential mapping used in the original algorithm. All the rest of the steps are more or less identical to the original algorithm.
 
 ### Ambient Fisher Interpolation in space of Poisson probabilities
 

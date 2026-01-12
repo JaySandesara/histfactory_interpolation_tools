@@ -114,16 +114,17 @@ class AmbientFisherInterpolator:
     def enclosing_simplex_indices(self, 
                      alpha: np.array):
         simplex_indices = int(self.triangulation.find_simplex(alpha))
-        if simplex_indices==-1:
-            raise Exception("Needs extrapolation")
         return simplex_indices
 
-    def predict_intrinsic(self, alpha: np.ndarray):
+    def predict_intrinsic(self, alpha: np.ndarray, xobs=None):
         '''
         Predict interpolated PDF at alpha, evaluated on self.x
         Done intrinsically in Hilbert space - no Euclidean embedding needed
         '''
         simplex_indices = self.enclosing_simplex_indices(alpha)
+
+        if simplex_indices==-1:
+            return None
 
         verts_init      = self.simplices[simplex_indices]
         anchors         = self.anchor_alphas[verts_init]
@@ -152,21 +153,22 @@ class AmbientFisherInterpolator:
         
         pdf_alpha = intrinsic_gnomonic_from_triangle(simplex_qs_reordered, 
                                                      self.x, 
-                                                     barycentric_weights)
+                                                     barycentric_weights,
+                                                     xobs = xobs)
 
         return pdf_alpha
 
-    def predict_extrinsic(self, alpha: np.ndarray, followKyle = True):
+    def predict_extrinsic(self, alpha: np.ndarray, xobs = None):
         '''
         Predict interpolated PDF at alpha, evaluated on self.x
         Original AF formulation with Euclidean embedding step
         '''
         simplex_indices = self.enclosing_simplex_indices(alpha)
 
+        if simplex_indices==-1:
+            return None
+        
         verts_init      = self.simplices[simplex_indices]
-        anchors         = self.anchor_alphas[verts_init]
-
-        barycentric_weights_init          = barycentric_weights_simplex(alpha, anchors)
 
         simplex_qs = self.q[verts_init]
 
@@ -185,9 +187,6 @@ class AmbientFisherInterpolator:
                                                 simplex_qs[:base_vertex], 
                                                 simplex_qs[base_vertex+1:]))
 
-        barycentric_weights = np.concatenate((barycentric_weights_init[base_vertex:base_vertex+1],
-                                              barycentric_weights_init[:base_vertex],
-                                              barycentric_weights_init[base_vertex+1:]))
 
         # Step 1: chord distances in Hilbert space
         chordDistMatrix=[]
@@ -209,9 +208,13 @@ class AmbientFisherInterpolator:
         baryCoords_ = self.triangulation.transform[simplex_indices, :self.sphere_dim].dot(np.transpose(alpha - self.triangulation.transform[simplex_indices, self.sphere_dim]))
         baryCoords = np.concatenate([baryCoords_, [1.0 - baryCoords_.sum()]])
 
+        baryCoords_reordered = np.concatenate((baryCoords[base_vertex:base_vertex+1], 
+                                                baryCoords[:base_vertex], 
+                                                baryCoords[base_vertex+1:]))
+
         gnomonicTarget = np.zeros(self.sphere_dim)
         for i in range(self.ambient_dim):
-            gnomonicTarget      += baryCoords[i] * gnomonic_projection_vertices[i]
+            gnomonicTarget      += baryCoords_reordered[i] * gnomonic_projection_vertices[i]
 
         normedVertices          = gnomonic_projection_vertices.copy()
         for i in range(1, normedVertices.shape[0]):
@@ -225,7 +228,10 @@ class AmbientFisherInterpolator:
         tangents_to_vertices_on_plane = []
         for i in range(1, self.ambient_dim):
             ci = inner_product(simplex_qs_reordered[0], simplex_qs_reordered[i], self.x)
-            tangents_to_vertices_on_plane.append(simplex_qs_reordered[i] - ci * simplex_qs_reordered[0])
+            if not callable(simplex_qs_reordered[0]):
+                tangents_to_vertices_on_plane.append(simplex_qs_reordered[i] - ci * simplex_qs_reordered[0])
+            else:
+                tangents_to_vertices_on_plane.append(simplex_qs_reordered[i](self.x) - ci * simplex_qs_reordered[0](self.x))
 
         # Step 4: Find the tangent direction in Hilbert space plane
         u = []
@@ -241,5 +247,11 @@ class AmbientFisherInterpolator:
         # Step 5: exp map on Hilbert sphere
         q_alpha         = l2_normalize(np.cos(t) * simplex_qs_reordered[0] + np.sin(t) * tangent_dir_target, self.x)
         pdf_alpha       = q_alpha ** 2
+
+        if xobs is not None:
+            if xobs.any() not in self.x.tolist():
+                raise Exception("x not in domain")
+            indices_xobs = [self.x.tolist().index(x) for x in xobs]
+            pdf_alpha = pdf_alpha[indices_xobs].copy()
 
         return pdf_alpha

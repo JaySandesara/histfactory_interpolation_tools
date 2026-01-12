@@ -13,8 +13,8 @@ def barycentric_weights_simplex(alpha, anchors):
     Return the barycentric weights w_i s.t. alpha = \sum_i w_i * a_i and \sum_i w_i = 1
     '''
     
-    # Applying \sum_i w_i = 1, w_1 = 1 - w_2 - w_3 
-    # Using this, we form a system of linear equations to solve for w_2 and w_3
+    # Applying \sum_i w_i = 1, w_1 = 1 - \sum_i w_i 
+    # Using this, we form a system of linear equations to solve for w_i
     num_anchors         = anchors.shape[0]
     M                   = np.column_stack([anchors[i] - anchors[0] for i in range(1, num_anchors)])
     y                   = alpha - anchors[0]
@@ -53,6 +53,10 @@ def getChordDistance(q1, q2, xarray):
 def l2_normalize(q, xarray):
     norm_squared = inner_product(q, q, xarray)
     return q / np.sqrt(norm_squared)
+
+def compute_l2_norm(q, xarray):
+    norm_squared = inner_product(q, q, xarray)
+    return norm_squared
 
 #########################################################
 ######### Gnomonic Projection
@@ -104,7 +108,7 @@ def embed_points_on_unit_sphere_from_chord_distances(chord_dist: np.array):
 ######### Building the interpolant
 ##########################################################
 
-def intrinsic_gnomonic_from_triangle(q_array, xarray, barycentric_weights):
+def intrinsic_gnomonic_from_triangle(q_array, xarray, barycentric_weights, xobs = None):
     '''
     Given unit-norm sqrt densities q_i and barycentric weights for the target alpha, 
     with q0 mapped to 0 in its own tangent place, the function returns interpolated pdf at alpha.
@@ -143,5 +147,11 @@ def intrinsic_gnomonic_from_triangle(q_array, xarray, barycentric_weights):
     q_alpha = l2_normalize(q_alpha, xarray)
 
     p_alpha = q_alpha**2
+
+    if xobs is not None:
+        if xobs.any() not in xarray.tolist():
+            raise Exception("x not in domain")
+        indices_xobs = [xarray.tolist().index(x) for x in xobs]
+        p_alpha = p_alpha[indices_xobs].copy()
     
     return p_alpha
