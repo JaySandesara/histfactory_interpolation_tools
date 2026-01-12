@@ -20,13 +20,13 @@ Key formulae that make this possible:
    
   $$g\left(\sqrt{p(\alpha)}\right) = \frac{\sqrt{p(\alpha)}}{\langle \sqrt{p(\alpha_0)}, \sqrt{p(\alpha)}\rangle} - \sqrt{p(\alpha_0)}$$
 
-  where we subtract $\sqrt{p(\alpha_0)}$ so the base point maps to zero and we move to a representation with vectors on the tangent space. This is equivalent to the Gnomonic projection formula in original Ambient Fisher when the Euclidean embedded $\sqrt{p(\alpha_0)}$ is chosen to be at the south pole of the embedding sphere, giving $\langle \sqrt{p(\alpha_0)}, \sqrt{p(\alpha)}\rangle$ equal to the last  (-z in 3D Euclidean embedding for example).
+  where we subtract $\sqrt{p(\alpha_0)}$ so the base point maps to zero and we move to a representation with vectors projected onto the tangent space. This is equivalent to the Gnomonic projection formula in original Ambient Fisher when the Euclidean embedded $\sqrt{p(\alpha_0)}$ is chosen to be at the south pole of the embedding sphere, giving $\langle \sqrt{p(\alpha_0)}, \sqrt{p(\alpha)}\rangle$ equal to the last coordinate (-z in 3D Euclidean embedding for example).
 
 2. Inverse Gnomonic Projection:
 
 $$\sqrt{p(\alpha)} = \frac{\sqrt{p(\alpha_0)} + g(\sqrt{p(\alpha)})}{\mid\mid \sqrt{p(\alpha_0)} + g(\sqrt{p(\alpha)}) \mid\mid}$$
 
-where $\sqrt{p(\alpha_0)}$ addition maps the point back onto the tangent plane at $\sqrt{p(\alpha_0)}$ and then the inverse is computed using the norm - exactly equivalent to the exponential mapping used in the original algorithm. All the rest of the steps are more or less identical to the original algorithm.
+where $\sqrt{p(\alpha_0)}$ addition maps the point back onto the original representation centered at the origin and then the inverse is computed using the norm - exactly equivalent to the exponential mapping used in the original algorithm. All the rest of the steps are more or less identical to the original algorithm.
 
 ### Ambient Fisher Interpolation in space of Poisson probabilities
 
