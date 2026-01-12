@@ -169,6 +169,7 @@ class AmbientFisherInterpolator:
             return None
         
         verts_init      = self.simplices[simplex_indices]
+        anchors         = self.anchor_alphas[verts_init]
 
         simplex_qs = self.q[verts_init]
 
@@ -205,8 +206,10 @@ class AmbientFisherInterpolator:
         gnomonic_projection = (-sphere_embedded_pts / z[:, None])     # scale so last coord is -1
         gnomonic_projection_vertices = gnomonic_projection[:, :self.sphere_dim].copy()
 
-        baryCoords_ = self.triangulation.transform[simplex_indices, :self.sphere_dim].dot(np.transpose(alpha - self.triangulation.transform[simplex_indices, self.sphere_dim]))
-        baryCoords = np.concatenate([baryCoords_, [1.0 - baryCoords_.sum()]])
+        # baryCoords_ = self.triangulation.transform[simplex_indices, :self.sphere_dim].dot(np.transpose(alpha - self.triangulation.transform[simplex_indices, self.sphere_dim]))
+        # baryCoords = np.concatenate([baryCoords_, [1.0 - baryCoords_.sum()]])
+
+        baryCoords = barycentric_weights_simplex(alpha, anchors)
 
         baryCoords_reordered = np.concatenate((baryCoords[base_vertex:base_vertex+1], 
                                                 baryCoords[:base_vertex], 
@@ -216,12 +219,6 @@ class AmbientFisherInterpolator:
         for i in range(self.ambient_dim):
             gnomonicTarget      += baryCoords_reordered[i] * gnomonic_projection_vertices[i]
 
-        normedVertices          = gnomonic_projection_vertices.copy()
-        for i in range(1, normedVertices.shape[0]):
-            normedVertices[i] /= np.linalg.norm(normedVertices[i])
-        normedSimplex           = Delaunay(normedVertices)
-        normedBaryCoords_       = normedSimplex.transform[0, :self.sphere_dim].dot(np.transpose(gnomonicTarget - normedSimplex.transform[0, self.sphere_dim]))
-        normedBaryCoords        = np.concatenate([normedBaryCoords_, [1.0 - normedBaryCoords_.sum()]])
         t                       = np.arctan(np.linalg.norm(gnomonicTarget))
 
         # Get tangents on the Hilbert plane
@@ -238,9 +235,19 @@ class AmbientFisherInterpolator:
         for i in range(self.ambient_dim-1):
             u.append(l2_normalize(tangents_to_vertices_on_plane[i], self.x))
         
+        normedVertices          = gnomonic_projection_vertices.copy()
+        for i in range(1, normedVertices.shape[0]):
+            normedVertices[i] /= np.linalg.norm(normedVertices[i])
+            
+        # # This Delaunay business seems to break the ordering from original Barycentric coords calculation
+        # normedSimplex           = Delaunay(normedVertices)
+        # normedBaryCoords_       = normedSimplex.transform[0, :self.sphere_dim].dot(np.transpose(gnomonicTarget - normedSimplex.transform[0, self.sphere_dim]))
+        # normedBaryCoords        = np.concatenate([normedBaryCoords_, [1.0 - normedBaryCoords_.sum()]])
+        normedBaryCoords = barycentric_weights_simplex(gnomonicTarget, normedVertices)
+
         tangent_dir_target = np.zeros_like(simplex_qs_reordered[0])
         for i in range(self.sphere_dim):
-            tangent_dir_target += u[i] * normedBaryCoords[i]
+            tangent_dir_target += u[i] * normedBaryCoords[i+1]
 
         tangent_dir_target = l2_normalize(tangent_dir_target, self.x)
 
