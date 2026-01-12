@@ -130,6 +130,8 @@ class AmbientFisherInterpolator:
         anchors         = self.anchor_alphas[verts_init]
 
         barycentric_weights_init = barycentric_weights_simplex(alpha, anchors)
+        # barycentric_weights_init_ = self.triangulation.transform[simplex_indices, :self.sphere_dim].dot(np.transpose(alpha - self.triangulation.transform[simplex_indices, self.sphere_dim]))
+        # barycentric_weights_init = np.concatenate([barycentric_weights_init_, [1.0 - barycentric_weights_init_.sum()]])
 
         simplex_qs = self.q[verts_init]
 
@@ -238,7 +240,7 @@ class AmbientFisherInterpolator:
         normedVertices          = gnomonic_projection_vertices.copy()
         for i in range(1, normedVertices.shape[0]):
             normedVertices[i] /= np.linalg.norm(normedVertices[i])
-            
+
         # # This Delaunay business seems to break the ordering from original Barycentric coords calculation
         # normedSimplex           = Delaunay(normedVertices)
         # normedBaryCoords_       = normedSimplex.transform[0, :self.sphere_dim].dot(np.transpose(gnomonicTarget - normedSimplex.transform[0, self.sphere_dim]))
