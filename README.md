@@ -32,7 +32,7 @@ where $\sqrt{p(\alpha_0)}$ addition maps the point back onto the original repres
 
 The closed-form expression for the Fisher-Rao geodesic associated with two Poisson distributions computed with expected yields $\nu_1$ and $\nu_2$ is given by [[ref]](https://arxiv.org/pdf/2304.14885):
 
-$$d_\text{FR}(p(x\mid \nu_1), p(x\mid \nu_1)) = 2 \cdot  \Big| \sqrt{\nu_1} - \sqrt{\nu_2} \Big|$$
+$$d_\text{FR}(p(n\mid \nu_1), p(n\mid \nu_1)) = 2 \cdot  \Big| \sqrt{\nu_1} - \sqrt{\nu_2} \Big|$$
 
 The key observation is that the FR metric for a Poisson family becomes Euclidean in the $\sqrt{\nu}$ space (ignoring the factor of two, which is just a constant scaling of the geometry. This means the gnomonic projection step is unnecessary and instead we interpolate along Poisson FR geodesics, which are linear in $\sqrt{\nu}$.
 
