@@ -10,6 +10,96 @@ from ambientfisher.utils import barycentric_weights_simplex, \
     intrinsic_gnomonic_from_triangle, getChordDistance, \
     embed_points_on_unit_sphere_from_chord_distances
 
+
+class GaussianProcessInterpolator:
+    def __init__(
+        self,
+        anchor_alphas: np.ndarray,
+        anchor_ratios: np.ndarray,
+        length_scale: float = 10.0,
+        variance: float = 1.0,
+        noise: float = 0.0
+    ):
+        """
+        Gaussian Process interpolator for systematic variation ratios
+
+        Parameters
+        ----------
+        anchor_alphas:
+            Array of shape (n_train, n_params). Training parameter points.
+        anchor_ratios:
+            Array of shape (n_train, ...) containing the ratio values at each training point.
+            The trailing dimensions can be (n_bins,), (n_events,), etc.
+        length_scale:
+            Squared-exponential kernel length scale.
+        variance:
+            Squared-exponential kernel variance.
+        noise:
+            Optional diagonal noise added to the training covariance.
+        """
+        self.anchor_alphas = np.asarray(anchor_alphas, dtype=float)
+        self.anchor_ratios = np.asarray(anchor_ratios, dtype=float)
+
+        self.length_scale = float(length_scale)
+        self.variance = float(variance)
+        self.noise = float(noise)
+
+        # Precompute K(train, train) factorization-ready matrix
+        K = self._sq_exp_kernel(self.anchor_alphas, self.anchor_alphas)
+        diag = (self.noise**2) * np.eye(K.shape[0])
+        self._K_train = K + diag
+
+        self._K_train_inverse = np.linalg.inv(self._K_train)
+
+        self._anchor_minus_prior = self.anchor_ratios - 1.0 # hardcoding 1.0 as prior mean temporarily
+
+    def _sq_exp_kernel(self, X1: np.ndarray, X2: np.ndarray) -> np.ndarray:
+        """
+        Squared exponential (RBF) kernel.
+
+        X1: (n1, d)
+        X2: (n2, d)
+        returns: (n1, n2)
+        """
+        X1 = np.asarray(X1, dtype=float)
+        X2 = np.asarray(X2, dtype=float)
+
+        # Pairwise squared distances: ||alpha - alpha'||^2
+        diff = X1[:, None, :] - X2[None, :, :]
+        sq_distance = np.sum(diff * diff, axis=-1)
+
+        return self.variance * np.exp(-0.5 * sq_distance / (self.length_scale**2))
+
+    def predict(self, alpha: Union[np.ndarray, list]) -> np.ndarray:
+        """
+        Predict ratio(s) at alpha using the GP posterior mean.
+
+        Parameters
+        ----------
+        alpha:
+            Either shape (n_params,) for one point or (n_eval, n_params) for many.
+
+        Returns
+        -------
+        ratios:
+            Predicted ratios with shape matching anchor_ratios trailing dims.
+            - If alpha is (n_params,), returns shape (...) (same trailing dims as anchor_ratios).
+            - If alpha is (n_eval, n_params), returns shape (n_eval, ...).
+        """
+        alpha = np.asarray(alpha, dtype=float)
+        single_point = (alpha.ndim == 1)
+        if single_point:
+            alpha = alpha[None, :]
+
+        K_eval_train = self._sq_exp_kernel(alpha, self.anchor_alphas)  # (n_eval, n_train)
+
+        # Posterior mean 
+        posterior_mean = 1.0 + K_eval_train @ self._K_train_inverse @ self._anchor_minus_prior
+
+        return posterior_mean
+
+
+
 class PoissonAFInterpolator:
     def __init__(self,
                  anchor_alphas: np.ndarray, 
