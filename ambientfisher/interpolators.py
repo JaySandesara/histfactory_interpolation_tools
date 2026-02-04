@@ -53,19 +53,19 @@ class GaussianProcessInterpolator:
 
         self._anchor_minus_prior = self.anchor_ratios - 1.0 # hardcoding 1.0 as prior mean temporarily
 
-    def _sq_exp_kernel(self, X1: np.ndarray, X2: np.ndarray) -> np.ndarray:
+    def _sq_exp_kernel(self, A1: np.ndarray, A2: np.ndarray) -> np.ndarray:
         """
         Squared exponential (RBF) kernel.
 
-        X1: (n1, d)
-        X2: (n2, d)
+        A1: (n1, d)
+        A2: (n2, d)
         returns: (n1, n2)
         """
-        X1 = np.asarray(X1, dtype=float)
-        X2 = np.asarray(X2, dtype=float)
+        A1 = np.asarray(A1, dtype=float)
+        A2 = np.asarray(A2, dtype=float)
 
         # Pairwise squared distances: ||alpha - alpha'||^2
-        diff = X1[:, None, :] - X2[None, :, :]
+        diff = A1[:, None, :] - A2[None, :, :]
         sq_distance = np.sum(diff * diff, axis=-1)
 
         return self.variance * np.exp(-0.5 * sq_distance / (self.length_scale**2))
