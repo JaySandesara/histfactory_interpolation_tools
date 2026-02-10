@@ -4,10 +4,6 @@ from typing import Union
 import matplotlib.pyplot as plt
 from scipy.spatial import Delaunay
 
-##################################################
-##### Barycentric coordinates 
-##################################################
-
 def barycentric_weights_simplex(alpha, anchors):
     '''
     Return the barycentric weights w_i s.t. alpha = \sum_i w_i * a_i and \sum_i w_i = 1
@@ -23,11 +19,6 @@ def barycentric_weights_simplex(alpha, anchors):
     w1                  = 1.0 - sum_weights_arr
     weights_arr         = np.insert(weights_arr, 0, w1)
     return np.array(weights_arr)
-
-
-#########################################################
-######### Inner Product
-##########################################################
 
 def return_measure(xarray):
     xmin = np.amin(xarray)
@@ -58,10 +49,6 @@ def compute_l2_norm(q, xarray):
     norm_squared = inner_product(q, q, xarray)
     return norm_squared
 
-#########################################################
-######### Gnomonic Projection
-##########################################################
-
 def choose_base_vertex(inner_product_matrix):
     """
     Choose a base vertex for numerical stability.
@@ -72,9 +59,7 @@ def choose_base_vertex(inner_product_matrix):
     scores = [np.min(inner_product_matrix[i, np.arange(m)!=i]) for i in range(m)]
     return int(np.argmax(scores))
 
-#########################################################
-######### Euclidean Embedding for Extrinsic Interpolation
-##########################################################
+
 def embed_points_on_unit_sphere_from_chord_distances(chord_dist: np.array):
     """
     Reconstruct m points on S^{d-1} given chord distances. 
@@ -104,23 +89,20 @@ def embed_points_on_unit_sphere_from_chord_distances(chord_dist: np.array):
 
     return pts
 
-#########################################################
-######### Building the interpolant
-##########################################################
 
 def intrinsic_gnomonic_from_triangle(q_array, xarray, barycentric_weights, xobs = None):
     '''
     Given unit-norm sqrt densities q_i and barycentric weights for the target alpha, 
-    with q0 mapped to 0 in its own tangent place, the function returns interpolated pdf at alpha.
+    with q_0 mapped to 0 in its own tangent place, the function returns interpolated pdf at alpha.
 
     This is the direct Hilber-space modification to the original AF.
 
     Gnomonic projection formula in the intrinsic space: 
-    g_i = q_i / <q0, q_i> - q0
+    g_i = q_i / <q_0, q_i> - q_0
 
     And the interpolation is done using the standard AF formula:
-    g = w2*g2 + w3*g3
-    q(alpha) = normalize(q0 + g)
+    g = \sum_{i=1} w_i*g_i 
+    q(alpha) = normalize(q_0 + g)
     p(alpha) = q(alpha)**2
     '''
 

@@ -5,6 +5,11 @@ from typing import Union
 import matplotlib.pyplot as plt
 from scipy.spatial import Delaunay
 
+import jax.numpy as jnp
+import evermore as evm
+from flax import nnx
+
+
 from ambientfisher.utils import barycentric_weights_simplex, \
     inner_product, choose_base_vertex, l2_normalize, \
     intrinsic_gnomonic_from_triangle, getChordDistance, \
@@ -22,20 +27,6 @@ class GaussianProcessInterpolator:
     ):
         """
         Gaussian Process interpolator for systematic variation ratios
-
-        Parameters
-        ----------
-        anchor_alphas:
-            Array of shape (n_train, n_params). Training parameter points.
-        anchor_ratios:
-            Array of shape (n_train, ...) containing the ratio values at each training point.
-            The trailing dimensions can be (n_bins,), (n_events,), etc.
-        length_scale:
-            Squared-exponential kernel length scale.
-        variance:
-            Squared-exponential kernel variance.
-        noise:
-            Optional diagonal noise added to the training covariance.
         """
         self.anchor_alphas = np.asarray(anchor_alphas, dtype=float)
         self.anchor_ratios = np.asarray(anchor_ratios, dtype=float)
@@ -51,15 +42,9 @@ class GaussianProcessInterpolator:
 
         self._K_train_inverse = np.linalg.inv(self._K_train)
 
-        self._anchor_minus_prior = self.anchor_ratios - 1.0 # hardcoding 1.0 as prior mean temporarily
-
     def _sq_exp_kernel(self, A1: np.ndarray, A2: np.ndarray) -> np.ndarray:
         """
         Squared exponential (RBF) kernel.
-
-        A1: (n1, d)
-        A2: (n2, d)
-        returns: (n1, n2)
         """
         A1 = np.asarray(A1, dtype=float)
         A2 = np.asarray(A2, dtype=float)
@@ -70,21 +55,9 @@ class GaussianProcessInterpolator:
 
         return self.variance * np.exp(-0.5 * sq_distance / (self.length_scale**2))
 
-    def predict(self, alpha: Union[np.ndarray, list]) -> np.ndarray:
+    def predict(self, alpha: Union[np.ndarray, list], prior_mean = 1.0) -> np.ndarray:
         """
         Predict ratio(s) at alpha using the GP posterior mean.
-
-        Parameters
-        ----------
-        alpha:
-            Either shape (n_params,) for one point or (n_eval, n_params) for many.
-
-        Returns
-        -------
-        ratios:
-            Predicted ratios with shape matching anchor_ratios trailing dims.
-            - If alpha is (n_params,), returns shape (...) (same trailing dims as anchor_ratios).
-            - If alpha is (n_eval, n_params), returns shape (n_eval, ...).
         """
         alpha = np.asarray(alpha, dtype=float)
         single_point = (alpha.ndim == 1)
@@ -93,8 +66,10 @@ class GaussianProcessInterpolator:
 
         K_eval_train = self._sq_exp_kernel(alpha, self.anchor_alphas)  # (n_eval, n_train)
 
+        _anchor_minus_prior = self.anchor_ratios - prior_mean 
+
         # Posterior mean 
-        posterior_mean = 1.0 + K_eval_train @ self._K_train_inverse @ self._anchor_minus_prior
+        posterior_mean = prior_mean + K_eval_train @ self._K_train_inverse @ _anchor_minus_prior
 
         return posterior_mean
 
@@ -233,7 +208,8 @@ class AmbientFisherInterpolator:
             inner_product_matrix.append(inner_product_arr)
         inner_product_matrix=np.array(inner_product_matrix)
 
-        base_vertex = choose_base_vertex(inner_product_matrix)
+        # base_vertex = choose_base_vertex(inner_product_matrix)
+        base_vertex = 0
 
         simplex_qs_reordered = np.concatenate((simplex_qs[base_vertex:base_vertex+1], 
                                                 simplex_qs[:base_vertex], 
