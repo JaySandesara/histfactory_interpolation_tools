@@ -244,20 +244,23 @@ class AmbientFisherInterpolator:
         Predict interpolated PDF at alpha, evaluated on self.x
         Original AF formulation with Euclidean embedding step
         '''
-        if self.doDelaunay:
-            simplex_indices = self.enclosing_simplex_indices(alpha)
+        # Enforce Delaunay step - doesnt work without
+        if not self.doDelaunay:
+            # Delauney triangulation
+            self.triangulation = Delaunay(self.anchor_alphas)
+            self.simplices = self.triangulation.simplices
+            self.neighbors = self.triangulation.neighbors
 
-            if simplex_indices==-1:
-                return None
-            
-            verts_init      = self.simplices[simplex_indices]
-            anchors         = self.anchor_alphas[verts_init]
+        
+        simplex_indices = self.enclosing_simplex_indices(alpha)
 
-            simplex_qs = self.q[verts_init]
+        if simplex_indices==-1:
+            return None
+        
+        verts_init      = self.simplices[simplex_indices]
+        anchors         = self.anchor_alphas[verts_init]
 
-        else:
-            anchors         = self.anchor_alphas
-            simplex_qs = self.q
+        simplex_qs = self.q[verts_init]
 
         inner_product_matrix=[]
         for f1 in simplex_qs:
