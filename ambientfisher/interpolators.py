@@ -89,10 +89,10 @@ class PoissonAFInterpolator:
         self.ambient_dim = len(anchor_alphas[0]) + 1
         self.sphere_dim = self.ambient_dim - 1
 
-        # Delauney triangulation
-        self.triangulation = Delaunay(self.anchor_alphas)
-        self.simplices = self.triangulation.simplices
-        self.neighbors = self.triangulation.neighbors
+        # # Delauney triangulation
+        # self.triangulation = Delaunay(self.anchor_alphas)
+        # self.simplices = self.triangulation.simplices
+        # self.neighbors = self.triangulation.neighbors
 
         if plot_simplex:
             if self.sphere_dim>2: 
@@ -122,16 +122,16 @@ class PoissonAFInterpolator:
         '''
         Predict interpolated nu at alpha
         '''
-        simplex_indices = self.enclosing_simplex_indices(alpha)
+        # simplex_indices = self.enclosing_simplex_indices(alpha)
 
-        verts_init = self.simplices[simplex_indices]
-        anchors = self.anchor_alphas[verts_init]
+        # verts_init = self.simplices[simplex_indices]
+        # anchors = self.anchor_alphas[verts_init]
 
-        barycentric_weights = barycentric_weights_simplex(alpha, anchors)
+        barycentric_weights = barycentric_weights_simplex(alpha, self.anchor_alphas)
 
-        sqrtnu_anchors = self.sqrtnus[verts_init]
+        # sqrtnu_anchors = self.sqrtnus[verts_init]
 
-        sqrtnu_interpolated = np.dot(barycentric_weights, sqrtnu_anchors)
+        sqrtnu_interpolated = np.dot(barycentric_weights, self.sqrtnus)
 
         nu_interpolated = sqrtnu_interpolated ** 2
 
@@ -186,40 +186,29 @@ class AmbientFisherInterpolator:
         Predict interpolated PDF at alpha, evaluated on self.x
         Done intrinsically in Hilbert space - no Euclidean embedding needed
         '''
-        simplex_indices = self.enclosing_simplex_indices(alpha)
+        # simplex_indices = self.enclosing_simplex_indices(alpha)
 
-        if simplex_indices==-1:
-            return None
+        # if simplex_indices==-1:
+        #     return None
 
-        verts_init      = self.simplices[simplex_indices]
-        anchors         = self.anchor_alphas[verts_init]
+        # verts_init      = self.simplices[simplex_indices]
+        # anchors         = self.anchor_alphas[verts_init]
 
-        barycentric_weights_init = barycentric_weights_simplex(alpha, anchors)
+        barycentric_weights = barycentric_weights_simplex(alpha, self.anchor_alphas)
         # barycentric_weights_init_ = self.triangulation.transform[simplex_indices, :self.sphere_dim].dot(np.transpose(alpha - self.triangulation.transform[simplex_indices, self.sphere_dim]))
         # barycentric_weights_init = np.concatenate([barycentric_weights_init_, [1.0 - barycentric_weights_init_.sum()]])
 
-        simplex_qs = self.q[verts_init]
+        # simplex_qs = self.q[verts_init]
 
-        inner_product_matrix=[]
-        for f1 in simplex_qs:
-            inner_product_arr = []
-            for f2 in simplex_qs:
-                inner_product_arr.append(inner_product(f1, f2, self.x))
-            inner_product_matrix.append(inner_product_arr)
-        inner_product_matrix=np.array(inner_product_matrix)
-
-        # base_vertex = choose_base_vertex(inner_product_matrix)
-        base_vertex = 0
-
-        simplex_qs_reordered = np.concatenate((simplex_qs[base_vertex:base_vertex+1], 
-                                                simplex_qs[:base_vertex], 
-                                                simplex_qs[base_vertex+1:]))
-
-        barycentric_weights = np.concatenate((barycentric_weights_init[base_vertex:base_vertex+1],
-                                              barycentric_weights_init[:base_vertex],
-                                              barycentric_weights_init[base_vertex+1:]))
-        
-        pdf_alpha = intrinsic_gnomonic_from_triangle(simplex_qs_reordered, 
+        # inner_product_matrix=[]
+        # for f1 in simplex_qs:
+        #     inner_product_arr = []
+        #     for f2 in simplex_qs:
+        #         inner_product_arr.append(inner_product(f1, f2, self.x))
+        #     inner_product_matrix.append(inner_product_arr)
+        # inner_product_matrix=np.array(inner_product_matrix)
+     
+        pdf_alpha = intrinsic_gnomonic_from_triangle(self.q, 
                                                      self.x, 
                                                      barycentric_weights,
                                                      xobs = xobs)
