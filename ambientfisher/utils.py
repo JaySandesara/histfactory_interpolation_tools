@@ -14,7 +14,9 @@ def barycentric_weights_simplex(alpha, anchors):
     num_anchors         = anchors.shape[0]
     M                   = np.column_stack([anchors[i] - anchors[0] for i in range(1, num_anchors)])
     y                   = alpha - anchors[0]
-    weights_arr         = np.linalg.solve(M, y)
+    M_inv               = np.linalg.pinv(M)
+    weights_arr         = M_inv @ y
+    # weights_arr         = np.linalg.solve(M, y)
     sum_weights_arr     = np.sum(weights_arr)
     w1                  = 1.0 - sum_weights_arr
     weights_arr         = np.insert(weights_arr, 0, w1)

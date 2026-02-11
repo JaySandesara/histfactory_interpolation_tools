@@ -79,24 +79,28 @@ class PoissonAFInterpolator:
     def __init__(self,
                  anchor_alphas: np.ndarray, 
                  anchor_nus: np.ndarray,
-                 plot_simplex=False):
+                 plot_simplex=False,
+                 doDelaunay=False):
         '''
         Bin-by-bin interpolator in the manifold of Poisson probabilities
         '''
-        self.anchor_alphas = anchor_alphas
-        self.anchor_nus = list(anchor_nus)
+        self.anchor_alphas  = anchor_alphas
+        self.anchor_nus     = list(anchor_nus)
 
-        self.ambient_dim = len(anchor_alphas[0]) + 1
-        self.sphere_dim = self.ambient_dim - 1
+        self.ambient_dim    = len(anchor_alphas[0]) + 1
+        self.sphere_dim     = self.ambient_dim - 1
 
-        # Delauney triangulation
-        self.triangulation = Delaunay(self.anchor_alphas)
-        self.simplices = self.triangulation.simplices
-        self.neighbors = self.triangulation.neighbors
+        self.doDelaunay     = doDelaunay
+
+        if doDelaunay:
+            # Delauney triangulation
+            self.triangulation = Delaunay(self.anchor_alphas)
+            self.simplices = self.triangulation.simplices
+            self.neighbors = self.triangulation.neighbors
 
         if plot_simplex:
-            if self.sphere_dim>2: 
-                print(f"Cannot plot simplex in high-dimensional space")
+            if self.sphere_dim>2 or not doDelaunay: 
+                print(f"Cannot plot simplex in high-dimensional space or when not using Delaunay tesselation")
             else:
                 plt.triplot(anchor_alphas[:,0], anchor_alphas[:,1], self.simplices)
                 plt.plot(anchor_alphas[:,0], anchor_alphas[:,1], 'o')
@@ -122,15 +126,19 @@ class PoissonAFInterpolator:
         '''
         Predict interpolated nu at alpha
         '''
-        simplex_indices = self.enclosing_simplex_indices(alpha)
+        if self.doDelaunay:
+            simplex_indices = self.enclosing_simplex_indices(alpha)
 
-        verts_init = self.simplices[simplex_indices]
-        anchors = self.anchor_alphas[verts_init]
+            verts_init = self.simplices[simplex_indices]
+            anchors = self.anchor_alphas[verts_init]
 
-        barycentric_weights = barycentric_weights_simplex(alpha, anchors)
+            barycentric_weights = barycentric_weights_simplex(alpha, anchors)
+            sqrtnu_anchors = self.sqrtnus[verts_init]
 
-        sqrtnu_anchors = self.sqrtnus[verts_init]
-
+        else:
+            barycentric_weights = barycentric_weights_simplex(alpha, self.anchor_alphas)
+            sqrtnu_anchors = self.sqrtnus
+            
         sqrtnu_interpolated = np.dot(barycentric_weights, sqrtnu_anchors)
 
         nu_interpolated = sqrtnu_interpolated ** 2
@@ -142,7 +150,8 @@ class AmbientFisherInterpolator:
                  anchor_alphas: np.array, 
                  anchor_pdfs: np.array, 
                  x_grid: np.ndarray,
-                 plot_simplex = False):
+                 plot_simplex = False,
+                 doDelaunay = False):
         '''
         This class of AF is derived from work by Cranmer, Streets and Bandyopadhyay
         '''
@@ -153,14 +162,17 @@ class AmbientFisherInterpolator:
         self.anchor_pdfs = list(anchor_pdfs)
         self.x = x_grid
 
-        # Delauney triangulation
-        self.triangulation = Delaunay(self.anchor_alphas)
-        self.simplices = self.triangulation.simplices
-        self.neighbors = self.triangulation.neighbors
+        self.doDelaunay = doDelaunay
+
+        if doDelaunay:
+            # Delauney triangulation
+            self.triangulation = Delaunay(self.anchor_alphas)
+            self.simplices = self.triangulation.simplices
+            self.neighbors = self.triangulation.neighbors
 
         if plot_simplex:
-            if self.sphere_dim>2: 
-                print(f"Cannot plot simplex in high-dimensional space")
+            if self.sphere_dim>2 or not doDelaunay: 
+                print(f"Cannot plot simplex in high-dimensional space or when not using Delaunay tesselation")
             else:
                 plt.triplot(anchor_alphas[:,0], anchor_alphas[:,1], self.simplices)
                 plt.plot(anchor_alphas[:,0], anchor_alphas[:,1], 'o')
@@ -186,19 +198,20 @@ class AmbientFisherInterpolator:
         Predict interpolated PDF at alpha, evaluated on self.x
         Done intrinsically in Hilbert space - no Euclidean embedding needed
         '''
-        simplex_indices = self.enclosing_simplex_indices(alpha)
 
-        if simplex_indices==-1:
-            return None
+        if self.doDelaunay:
+            simplex_indices = self.enclosing_simplex_indices(alpha)
 
-        verts_init      = self.simplices[simplex_indices]
-        anchors         = self.anchor_alphas[verts_init]
+            if simplex_indices==-1:
+                return None
 
-        barycentric_weights_init = barycentric_weights_simplex(alpha, anchors)
-        # barycentric_weights_init_ = self.triangulation.transform[simplex_indices, :self.sphere_dim].dot(np.transpose(alpha - self.triangulation.transform[simplex_indices, self.sphere_dim]))
-        # barycentric_weights_init = np.concatenate([barycentric_weights_init_, [1.0 - barycentric_weights_init_.sum()]])
-
-        simplex_qs = self.q[verts_init]
+            verts_init      = self.simplices[simplex_indices]
+            anchors         = self.anchor_alphas[verts_init]
+            barycentric_weights = barycentric_weights_simplex(alpha, anchors)
+            simplex_qs = self.q[verts_init]
+        else:
+            barycentric_weights = barycentric_weights_simplex(alpha, self.anchor_alphas)
+            simplex_qs = self.q
 
         inner_product_matrix=[]
         for f1 in simplex_qs:
@@ -208,20 +221,20 @@ class AmbientFisherInterpolator:
             inner_product_matrix.append(inner_product_arr)
         inner_product_matrix=np.array(inner_product_matrix)
 
-        # base_vertex = choose_base_vertex(inner_product_matrix)
-        base_vertex = 0
+        # choose base vertex for stability, then reorder (base first)
+        base_vertex = choose_base_vertex(inner_product_matrix)
 
         simplex_qs_reordered = np.concatenate((simplex_qs[base_vertex:base_vertex+1], 
                                                 simplex_qs[:base_vertex], 
                                                 simplex_qs[base_vertex+1:]))
-
-        barycentric_weights = np.concatenate((barycentric_weights_init[base_vertex:base_vertex+1],
-                                              barycentric_weights_init[:base_vertex],
-                                              barycentric_weights_init[base_vertex+1:]))
         
+        barycentric_weights_reordered = np.concatenate((barycentric_weights[base_vertex:base_vertex+1], 
+                                                barycentric_weights[:base_vertex], 
+                                                barycentric_weights[base_vertex+1:]))
+     
         pdf_alpha = intrinsic_gnomonic_from_triangle(simplex_qs_reordered, 
                                                      self.x, 
-                                                     barycentric_weights,
+                                                     barycentric_weights_reordered,
                                                      xobs = xobs)
 
         return pdf_alpha
@@ -231,6 +244,14 @@ class AmbientFisherInterpolator:
         Predict interpolated PDF at alpha, evaluated on self.x
         Original AF formulation with Euclidean embedding step
         '''
+        # Enforce Delaunay step - doesnt work without
+        if not self.doDelaunay:
+            # Delauney triangulation
+            self.triangulation = Delaunay(self.anchor_alphas)
+            self.simplices = self.triangulation.simplices
+            self.neighbors = self.triangulation.neighbors
+
+        
         simplex_indices = self.enclosing_simplex_indices(alpha)
 
         if simplex_indices==-1:
